@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 public class GridView : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
 {
-    [SerializeField] private Image image;
+    [SerializeField] public Image image;
 
     private int X { get; set; }
     private int Y { get; set; }

@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 263dff4e8f3b4a7b98be0d1f825687c7, type: 3}
   m_Name: Level_001
   m_EditorClassIdentifier: Assembly-CSharp::Game.ScriptableObjects.GridSO
-  gridX: 5
-  gridY: 5
-  tileSize: 50
+  gridX: 10
+  gridY: 10
+  tileSize: 100
   tileSpacing: 50
   Sprites:
   - {fileID: 3465286685962602723, guid: 08fe644aa60be1245bedbdad922db9fb, type: 3}

@@ -26,9 +26,9 @@ public class GridManager : MonoBehaviour
         (-1, 1), // left up
         (1, -1) // right down
     };
-    
-    
-    
+
+
+
     private static readonly (int dx, int dy)[] Dir4 =
     {
         (-1, 0), // left
@@ -36,55 +36,55 @@ public class GridManager : MonoBehaviour
         (0, -1), // down
         (0, 1), // up
     };
-    
+
     private static readonly (int dx, int dy)[] Dir16 =
     {
-        (-1, 0),  // left
-        (1, 0),   // right
-        (0, -1),  // down
-        (0, 1),   // up
+        (-1, 0), // left
+        (1, 0), // right
+        (0, -1), // down
+        (0, 1), // up
 
-        (1, 1),   // right up
+        (1, 1), // right up
         (-1, -1), // left down
-        (-1, 1),  // left up
-        (1, -1),  // right down
+        (-1, 1), // left up
+        (1, -1), // right down
 
-        (-2, 0),  // left (2)
-        (2, 0),   // right (2)
-        (0, -2),  // down (2)
-        (0, 2),   // up (2)
+        (-2, 0), // left (2)
+        (2, 0), // right (2)
+        (0, -2), // down (2)
+        (0, 2), // up (2)
 
-        (2, 2),   // right up (2)
+        (2, 2), // right up (2)
         (-2, -2), // left down (2)
-        (-2, 2),  // left up (2)
-        (2, -2)   // right down (2)
+        (-2, 2), // left up (2)
+        (2, -2) // right down (2)
     };
-    
+
     private static readonly (int dx, int dy)[] Dir24 =
     {
         // 1-step (4)
-        (-1, 0),  // left
-        (1, 0),   // right
-        (0, -1),  // down
-        (0, 1),   // up
+        (-1, 0), // left
+        (1, 0), // right
+        (0, -1), // down
+        (0, 1), // up
 
         // 1-step diagonals (4)
-        (1, 1),   // right up
+        (1, 1), // right up
         (-1, -1), // left down
-        (-1, 1),  // left up
-        (1, -1),  // right down
+        (-1, 1), // left up
+        (1, -1), // right down
 
         // 2-step straight (4)
-        (-2, 0),  // left (2)
-        (2, 0),   // right (2)
-        (0, -2),  // down (2)
-        (0, 2),   // up (2)
+        (-2, 0), // left (2)
+        (2, 0), // right (2)
+        (0, -2), // down (2)
+        (0, 2), // up (2)
 
         // 2-step diagonals (4)
-        (2, 2),   // right up (2)
+        (2, 2), // right up (2)
         (-2, -2), // left down (2)
-        (-2, 2),  // left up (2)
-        (2, -2),  // right down (2)
+        (-2, 2), // left up (2)
+        (2, -2), // right down (2)
 
         // Knight / L-moves (8): (±2,±1) and (±1,±2)
         (2, 1),
@@ -96,7 +96,7 @@ public class GridManager : MonoBehaviour
         (-1, 2),
         (-1, -2),
     };
-    
+
     [Header("View")] [SerializeField] private GridView gridPrefab;
     [SerializeField] private GameObject canvasParent;
 
@@ -109,10 +109,14 @@ public class GridManager : MonoBehaviour
     private TileType[] _cells;
     private GridView[] _views;
     private Vector2[] _homeAnchoredPos;
-    
+
+
+    private Sequence _seq;
+
     private int _stamp = 1;
-    private int[] _visitedStamp;   // length = _cells.Length
-    private int[] _queue;          // length = _cells.Length
+    private int[] _visitedStamp; // length = _cells.Length
+    private int[] _queue; // length = _cells.Length
+
     private void Start()
     {
         _width = gridSo.gridX;
@@ -127,7 +131,7 @@ public class GridManager : MonoBehaviour
         FindColor();
         FindBlocks();
     }
-    
+
     private void CreateCenteredGridView()
     {
         float spacing = gridSo.tileSpacing;
@@ -162,7 +166,7 @@ public class GridManager : MonoBehaviour
                     rt.anchoredPosition = new Vector2(px, py);
                     rt.localRotation = Quaternion.identity;
                     rt.localScale = Vector3.one;
-                    
+
                     _homeAnchoredPos[index] = rt.anchoredPosition;
                 }
 
@@ -180,35 +184,111 @@ public class GridManager : MonoBehaviour
         }
     }
 
-    private Sequence _seq;
-    private bool _isMoving = false;
-
     private void OnGridCellPointerDown(int x, int y)
     {
         _seq?.Kill();
         _seq = DOTween.Sequence();
+        Rocket(x, y);
+    }
+    
+    private void Rocket(int x, int y)
+    {
+        // Dikey (Y ekseni)
+        int upSteps = _height - 1 - y;
+        int downSteps = y;
+        int ySteps = Mathf.Max(upSteps, downSteps);
 
-        _isMoving = true;
+        for (int i = 0; i <= ySteps; i++)
+        {
+            
+            int upY = y + i;
+            if (upY < _height)
+            {
+                int upIndex = Idx(x, upY);
 
+                var seq = DOTween.Sequence();
+                seq.Append(_views[upIndex].transform.DOScale(1.7f, 0.25f)).SetEase(Ease.OutQuad);
+                seq.Append(_views[upIndex].transform.DOScale(0f, 0.25f)).SetEase(Ease.OutQuad);
+                seq.Join(_views[upIndex].image.DOFade(0, 0.15f));
+                _seq.Join(seq);
+                
+            }
+
+            if (i == 0) continue;
+            
+            int downY = y - i;
+            if (downY >= 0)
+            {
+                int downIndex = Idx(x, downY);
+            
+                var seq = DOTween.Sequence();
+                seq.Append(_views[downIndex].transform.DOScale(1.7f, 0.25f)).SetEase(Ease.OutQuad);
+                seq.Append(_views[downIndex].transform.DOScale(0f, 0.25f)).SetEase(Ease.OutQuad);
+                seq.Join(_views[downIndex].image.DOFade(0, 0.15f));
+                _seq.Join(seq);
+            }
+        }
+
+        int rightSteps = _width - 1 - x;
+        int leftSteps = x;
+        int xSteps = Mathf.Max(rightSteps, leftSteps);
+        
+        for (int i = 0; i <= xSteps; i++)
+        {
+            int rightX = x + i;
+            if (rightX < _width)
+            {
+                int rightIndex = Idx(rightX, y);
+        
+                var seq = DOTween.Sequence();
+                seq.Append(_views[rightIndex].transform.DOScale(1.7f, 0.25f)).SetEase(Ease.OutQuad);
+                seq.Append(_views[rightIndex].transform.DOScale(0f, 0.25f)).SetEase(Ease.OutQuad);
+                seq.Join(_views[rightIndex].image.DOFade(0, 0.15f));
+                _seq.Join(seq);
+            }
+        
+            if (i == 0) continue;
+        
+            int leftX = x - i;
+            if (leftX >= 0)
+            {
+                int leftIndex = Idx(leftX, y);
+        
+                var seq = DOTween.Sequence();
+                seq.Append(_views[leftIndex].transform.DOScale(1.7f, 0.25f)).SetEase(Ease.OutQuad);
+                seq.Append(_views[leftIndex].transform.DOScale(0f, 0.25f)).SetEase(Ease.OutQuad);
+                seq.Join(_views[leftIndex].image.DOFade(0, 0.15f));
+                _seq.Join(seq);
+            }
+        }
+    }
+    
+    private void OnGridCellPointerUp(int x, int y)
+    {
+
+    }
+    
+    private void StartPointerDownPush(int x, int y)
+    {
+        _seq?.Kill();
+        _seq = DOTween.Sequence();
+        
         int clickedIndex = Idx(x, y);
         var clickedView = _views[clickedIndex];
-
+        
         ForEachNeighbor24(x, y, (nx, ny, level) =>
         {
             int index = Idx(nx, ny);
             var view = _views[index];
-            
             
             PushNeighbor(view, clickedView, pushOut: true, index: index, level);
         });
     }
     
-    private void OnGridCellPointerUp(int x, int y)
+    private void StartPointerUpPush(int x, int y)
     {
         _seq?.Kill();
         _seq = DOTween.Sequence();
-
-        _isMoving = false;
 
         int clickedIndex = Idx(x, y);
         var clickedView = _views[clickedIndex];
@@ -217,6 +297,7 @@ public class GridManager : MonoBehaviour
         {
             int index = Idx(nx, ny);
             var view = _views[index];
+            
             PushNeighbor(view, clickedView, pushOut: false, index: index, level);
         });
     }
@@ -237,18 +318,26 @@ public class GridManager : MonoBehaviour
         float pushDistance = 10f * (1f / neighborLevel); 
 
         Vector2 target;
+        float scale = 0;
+        float alpha = 1;
         if (pushOut)
         {
+            scale = 0.8f;
+            alpha = 0.5f;
             float invLen = 1f / Mathf.Sqrt(lenSq);
             Vector2 outDir = dir * invLen;
             target = pos + outDir * pushDistance;
         }
         else
         {
+            scale = 1f;
+            alpha = 1f;
             target = _homeAnchoredPos[index];
         }
 
-        _seq.Join(rt.DOAnchorPos(target, 0.1f).SetEase(Ease.OutQuad));
+        _seq.Join(rt.DOAnchorPos(target, 0.1f).SetEase(Ease.OutQuad))
+            .Join(clickedView.transform.DOScale(scale, .3f))
+            .Join(clickedView.image.DOFade(alpha, .3f));
     }
     public void ForEachNeighbor4(int x, int y, Action<int, int> visitor)
     {
